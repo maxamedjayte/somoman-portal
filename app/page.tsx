@@ -5,6 +5,8 @@ import WhatsAppButton from "./components/ui/WhatsAppButton";
 import { createClient } from "./lib/supabase/server";
 import type { Service, Config } from "./lib/supabase/types";
 
+export const dynamic = 'force-dynamic';
+
 async function getConfig(): Promise<Config | null> {
   try {
     const supabase = await createClient();

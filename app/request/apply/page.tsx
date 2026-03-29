@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/app/lib/supabase/client";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Loader2, Smartphone, CreditCard } from "lucide-react";
@@ -20,7 +20,7 @@ type Config = {
     discount_price: number;
 };
 
-export default function BookingApplyPage() {
+function BookingApplyContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const serviceId = searchParams.get("service");
@@ -293,5 +293,17 @@ export default function BookingApplyPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function BookingApplyPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex min-h-screen items-center justify-center bg-[#f8f9fa]">
+                <Loader2 className="h-8 w-8 animate-spin text-[#003527]" />
+            </div>
+        }>
+            <BookingApplyContent />
+        </Suspense>
     );
 }
