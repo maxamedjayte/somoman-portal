@@ -1,9 +1,17 @@
 import Link from "next/link";
 
-export default function WhatsAppButton() {
+type WhatsAppButtonProps = {
+    whatsappNumber?: string;
+};
+
+export default function WhatsAppButton({ whatsappNumber }: WhatsAppButtonProps) {
+    if (!whatsappNumber) return null;
+
+    const cleanNumber = whatsappNumber.replace(/\D/g, '');
+
     return (
         <Link
-            href="https://wa.me/96800000000"
+            href={`https://wa.me/${cleanNumber}`}
             target="_blank"
             className="fixed bottom-5 right-5 z-50 flex h-16 w-16 items-center justify-center rounded-[22px] bg-[#25D366] text-white shadow-[0_18px_45px_rgba(37,211,102,0.35)] transition hover:scale-105"
             aria-label="Chat on WhatsApp"

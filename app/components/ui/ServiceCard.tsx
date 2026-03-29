@@ -1,4 +1,7 @@
+import Link from "next/link";
+
 type ServiceCardProps = {
+    id: string;
     title: string;
     description: string;
     image: string;
@@ -6,6 +9,7 @@ type ServiceCardProps = {
 };
 
 export default function ServiceCard({
+    id,
     title,
     description,
     image,
@@ -43,12 +47,12 @@ export default function ServiceCard({
                     ))}
                 </ul>
 
-                <button
-                    type="button"
-                    className="w-full rounded-md bg-[#003527] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#064e3b]"
+                <Link
+                    href={`/request/apply?service=${id}`}
+                    className="block w-full rounded-md bg-[#003527] px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-[#064e3b]"
                 >
                     Qabso Ballan
-                </button>
+                </Link>
             </div>
         </article>
     );

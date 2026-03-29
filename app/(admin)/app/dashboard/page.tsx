@@ -7,37 +7,41 @@ import {
     Activity,
     TrendingUp,
 } from "lucide-react";
+import { createClient } from "@/app/lib/supabase/server";
 
-const latestRequests = [
-    {
-        id: "REQ-1024",
-        applicant: "Ahmed Hassan",
-        service: "Visa Support",
-        status: "pending",
-        createdAt: "2026-03-28",
-    },
-    {
-        id: "REQ-1023",
-        applicant: "Amina Yusuf",
-        service: "Housing",
-        status: "approved",
-        createdAt: "2026-03-27",
-    },
-    {
-        id: "REQ-1022",
-        applicant: "Mohamed Ali",
-        service: "Business Setup",
-        status: "pending",
-        createdAt: "2026-03-26",
-    },
-    {
-        id: "REQ-1021",
-        applicant: "Fartun Noor",
-        service: "Education Support",
-        status: "rejected",
-        createdAt: "2026-03-25",
-    },
-];
+async function getDashboardStats() {
+    const supabase = await createClient();
+
+    const [servicesResult, requestsResult] = await Promise.all([
+        supabase.from("services").select("id", { count: "exact", head: true }),
+        supabase.from("booking_requests").select("id, status", { count: "exact" }),
+    ]);
+
+    const totalServices = servicesResult.count || 0;
+    const totalRequests = requestsResult.count || 0;
+    const requests = requestsResult.data || [];
+
+    const approvedCount = requests.filter((r) => r.status === "approved").length;
+    const pendingCount = requests.filter((r) => r.status === "pending").length;
+
+    return {
+        totalServices,
+        totalRequests,
+        approvedCount,
+        pendingCount,
+    };
+}
+
+async function getLatestRequests() {
+    const supabase = await createClient();
+    const { data } = await supabase
+        .from("booking_requests")
+        .select("id, full_name, service_type, status, created_at")
+        .order("created_at", { ascending: false })
+        .limit(5);
+
+    return data || [];
+}
 
 function getStatusClasses(status: string) {
     if (status === "approved") return "bg-emerald-100 text-emerald-700";
@@ -45,7 +49,9 @@ function getStatusClasses(status: string) {
     return "bg-amber-100 text-amber-700";
 }
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+    const stats = await getDashboardStats();
+    const latestRequests = await getLatestRequests();
     return (
         <div className="space-y-6">
             {/* KPI cards */}
@@ -57,9 +63,9 @@ export default function DashboardPage() {
                                 Total Applications
                             </p>
                             <p className="mt-3 text-3xl font-extrabold tracking-tight text-[#191c1d]">
-                                248
+                                {stats.totalRequests}
                             </p>
-                            <p className="mt-2 text-sm text-[#191c1d]/55">+12% this month</p>
+                            <p className="mt-2 text-sm text-[#191c1d]/55">Total booking requests</p>
                         </div>
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#4059aa] text-white">
                             <Users className="h-5 w-5" />
@@ -74,9 +80,13 @@ export default function DashboardPage() {
                                 Approved
                             </p>
                             <p className="mt-3 text-3xl font-extrabold tracking-tight text-[#191c1d]">
-                                174
+                                {stats.approvedCount}
                             </p>
-                            <p className="mt-2 text-sm text-[#191c1d]/55">70% approval rate</p>
+                            <p className="mt-2 text-sm text-[#191c1d]/55">
+                                {stats.totalRequests > 0
+                                    ? `${Math.round((stats.approvedCount / stats.totalRequests) * 100)}% approval rate`
+                                    : "No requests yet"}
+                            </p>
                         </div>
                         <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white">
                             <CheckCircle className="h-5 w-5" />
@@ -91,7 +101,7 @@ export default function DashboardPage() {
                                 Pending Review
                             </p>
                             <p className="mt-3 text-3xl font-extrabold tracking-tight text-[#191c1d]">
-                                52
+                                {stats.pendingCount}
                             </p>
                             <p className="mt-2 text-sm text-[#191c1d]/55">Needs action</p>
                         </div>
@@ -108,7 +118,7 @@ export default function DashboardPage() {
                                 Services Active
                             </p>
                             <p className="mt-3 text-3xl font-extrabold tracking-tight text-[#191c1d]">
-                                8
+                                {stats.totalServices}
                             </p>
                             <p className="mt-2 text-sm text-[#191c1d]/55">Across all categories</p>
                         </div>
@@ -214,42 +224,50 @@ export default function DashboardPage() {
                         </thead>
 
                         <tbody>
-                            {latestRequests.map((request) => (
-                                <tr
-                                    key={request.id}
-                                    className="border-t border-[#f1f3f5] transition hover:bg-[#fafbfb]"
-                                >
-                                    <td className="px-6 py-4 text-sm font-semibold text-[#003527]">
-                                        {request.id}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-[#191c1d]">
-                                        {request.applicant}
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-[#191c1d]/75">
-                                        {request.service}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span
-                                            className={`inline-flex rounded-full px-3 py-1 text-xs font-bold capitalize ${getStatusClasses(
-                                                request.status
-                                            )}`}
-                                        >
-                                            {request.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-sm text-[#191c1d]/60">
-                                        {request.createdAt}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <Link
-                                            href={`/app/requests/${request.id}`}
-                                            className="text-sm font-semibold text-[#4059aa]"
-                                        >
-                                            View
-                                        </Link>
+                            {latestRequests.length === 0 ? (
+                                <tr>
+                                    <td colSpan={6} className="px-6 py-12 text-center text-sm text-[#191c1d]/55">
+                                        No requests yet
                                     </td>
                                 </tr>
-                            ))}
+                            ) : (
+                                latestRequests.map((request) => (
+                                    <tr
+                                        key={request.id}
+                                        className="border-t border-[#f1f3f5] transition hover:bg-[#fafbfb]"
+                                    >
+                                        <td className="px-6 py-4 text-sm font-semibold text-[#003527]">
+                                            #{request.id.slice(0, 8)}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-[#191c1d]">
+                                            {request.full_name}
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-[#191c1d]/75">
+                                            {request.service_type}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span
+                                                className={`inline-flex rounded-full px-3 py-1 text-xs font-bold capitalize ${getStatusClasses(
+                                                    request.status
+                                                )}`}
+                                            >
+                                                {request.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-sm text-[#191c1d]/60">
+                                            {new Date(request.created_at).toLocaleDateString()}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <Link
+                                                href={`/app/requests/${request.id}`}
+                                                className="text-sm font-semibold text-[#4059aa]"
+                                            >
+                                                View
+                                            </Link>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>

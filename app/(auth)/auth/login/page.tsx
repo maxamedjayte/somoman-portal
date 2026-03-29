@@ -1,4 +1,25 @@
+"use client";
+
+import { login } from "./actions";
+import { useFormState, useFormStatus } from "react-dom";
+
+function SubmitButton() {
+    const { pending } = useFormStatus();
+
+    return (
+        <button
+            type="submit"
+            disabled={pending}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-4 font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+            {pending ? "Signing in..." : "Sign In"}
+        </button>
+    );
+}
+
 export default function LoginPage() {
+    const [state, formAction] = useFormState(login, { error: "" });
+
     return (
         <div className="flex min-h-screen w-full items-center justify-center bg-slate-50 p-4 sm:p-8">
             <div className="flex min-h-[700px] w-full max-w-5xl flex-col overflow-hidden rounded-[32px] border border-gray-100 bg-white shadow-2xl shadow-emerald-900/10 lg:flex-row">
@@ -13,7 +34,13 @@ export default function LoginPage() {
                             </p>
                         </div>
 
-                        <form className="space-y-5">
+                        {state?.error && (
+                            <div className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                {state.error}
+                            </div>
+                        )}
+
+                        <form action={formAction} className="space-y-5">
                             <div className="space-y-1.5">
                                 <label className="ml-1 text-sm font-semibold text-gray-700">
                                     Email Address
@@ -21,6 +48,8 @@ export default function LoginPage() {
                                 <div className="relative">
                                     <input
                                         type="email"
+                                        name="email"
+                                        required
                                         placeholder="name@company.com"
                                         className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                                     />
@@ -34,18 +63,15 @@ export default function LoginPage() {
                                 <div className="relative">
                                     <input
                                         type="password"
+                                        name="password"
+                                        required
                                         placeholder="••••••••"
                                         className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                                     />
                                 </div>
                             </div>
 
-                            <button
-                                type="submit"
-                                className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-4 font-bold text-white shadow-lg shadow-emerald-600/20 transition-all hover:bg-emerald-700 active:scale-[0.98]"
-                            >
-                                Sign In
-                            </button>
+                            <SubmitButton />
                         </form>
 
                         <div className="mt-8 text-center">
