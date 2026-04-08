@@ -9,11 +9,14 @@ export default function ServiceSection({ services }: ServiceSectionProps) {
     return (
         <section className="bg-[#f3f4f5] py-10 md:py-14">
             <div className="mx-auto max-w-7xl px-4 md:px-6">
-                <div className="mb-3 md:mb-3">
-                    <div className="flex items-end justify-between gap-4">
-                        <h2 className="max-w-lg text-3xl font-extrabold leading-tight tracking-[-0.02em] text-[#191c1d] md:text-3xl">
+                <div className="mb-6 md:mb-8">
+                    <div className="flex flex-col gap-2">
+                        <h2 className="text-2xl font-extrabold leading-tight tracking-[-0.02em] text-[#191c1d] md:text-2xl">
                             Adeegyada SomOmaan
                         </h2>
+                        <p className="text-sm text-[#191c1d]/65 md:text-base">
+                            Dooro adeegga aad u baahan tahay oo bilow codsigaaga
+                        </p>
                     </div>
                 </div>
 
