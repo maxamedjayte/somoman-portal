@@ -3,8 +3,11 @@
 import { useState, useEffect, Suspense } from "react";
 import { createClient } from "@/app/lib/supabase/client";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Loader2, Smartphone, CreditCard } from "lucide-react";
+import { Loader2, Smartphone, CreditCard, Calendar, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { getNextAvailableDay, formatScheduleInfo, getScheduleBadgeColor, getLocalDateString } from "@/app/lib/schedule";
+import type { ScheduleAssignment } from "@/app/lib/schedule";
+import type { WorkSchedule } from "@/app/lib/supabase/types";
 
 type Service = {
     id: string;
@@ -29,6 +32,8 @@ function BookingApplyContent() {
     const [config, setConfig] = useState<Config | null>(null);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [scheduleAssignment, setScheduleAssignment] = useState<ScheduleAssignment | null>(null);
+    const [scheduleError, setScheduleError] = useState("");
 
     const [formData, setFormData] = useState({
         full_name: "",
@@ -44,18 +49,58 @@ function BookingApplyContent() {
     async function fetchData() {
         const supabase = createClient();
 
-        const [serviceRes, configRes] = await Promise.all([
+        const [serviceRes, configRes, scheduleRes] = await Promise.all([
             supabase.from("services").select("*").eq("id", serviceId).single(),
             supabase.from("config").select("service_price, is_discount_active, discount_price").single(),
+            supabase.from("work_schedules").select("*").order("day_of_week", { ascending: true }),
         ]);
 
         if (serviceRes.data) setService(serviceRes.data);
         if (configRes.data) setConfig(configRes.data);
+
+        // Schedule logic
+        const schedules: WorkSchedule[] = scheduleRes.data || [];
+        if (schedules.length > 0) {
+            // Get request counts for next 14 days
+            const today = new Date();
+            const dates: string[] = [];
+            for (let i = 0; i < 14; i++) {
+                const d = new Date(today);
+                d.setDate(d.getDate() + i);
+                dates.push(getLocalDateString(d));
+            }
+
+            const { data: existingRequests } = await supabase
+                .from("booking_requests")
+                .select("scheduled_date")
+                .in("scheduled_date", dates);
+
+            const requestCounts: Record<string, number> = {};
+            (existingRequests || []).forEach((r) => {
+                if (r.scheduled_date) {
+                    requestCounts[r.scheduled_date] = (requestCounts[r.scheduled_date] || 0) + 1;
+                }
+            });
+
+            const assignment = getNextAvailableDay(schedules, requestCounts);
+            if (assignment) {
+                setScheduleAssignment(assignment);
+            } else {
+                setScheduleError("No available working day is currently configured. Please contact support.");
+            }
+        }
+
         setLoading(false);
     }
 
     async function handleSubmit(e: React.FormEvent) {
         e.preventDefault();
+
+        if (scheduleError) {
+            alert(scheduleError);
+            return;
+        }
+
         setSubmitting(true);
 
         const supabase = createClient();
@@ -65,21 +110,31 @@ function BookingApplyContent() {
             ? config.discount_price
             : config?.service_price || 0;
 
+        const insertData: Record<string, unknown> = {
+            full_name: formData.full_name,
+            country: formData.country,
+            phone_number: formData.payment_method === "Mobile Money" ? formData.phone_number : null,
+            service_id: serviceId,
+            payment_method: formData.payment_method,
+            paid_money: finalPrice,
+            payment_status: "pending",
+            process: "new",
+            booking_pin: bookingPin,
+        };
+
+        // Add schedule data if available
+        if (scheduleAssignment) {
+            insertData.scheduled_date = scheduleAssignment.scheduled_date;
+            insertData.scheduled_day_of_week = scheduleAssignment.scheduled_day_of_week;
+            insertData.scheduled_start_time = scheduleAssignment.scheduled_start_time;
+            insertData.scheduled_end_time = scheduleAssignment.scheduled_end_time;
+            insertData.schedule_status = scheduleAssignment.schedule_status;
+            insertData.schedule_note = scheduleAssignment.schedule_note;
+        }
+
         const { data, error } = await supabase
             .from("booking_requests")
-            .insert([
-                {
-                    full_name: formData.full_name,
-                    country: formData.country,
-                    phone_number: formData.payment_method === "Mobile Money" ? formData.phone_number : null,
-                    service_id: serviceId,
-                    payment_method: formData.payment_method,
-                    paid_money: finalPrice,
-                    payment_status: "pending",
-                    process: "new",
-                    booking_pin: bookingPin,
-                },
-            ])
+            .insert([insertData])
             .select()
             .single();
 
@@ -136,6 +191,26 @@ function BookingApplyContent() {
 
                 <div className="rounded-[30px] bg-white p-6 md:p-8 shadow-[0_20px_45px_rgba(25,28,29,0.05)]">
                     <h1 className="mb-6 text-2xl font-extrabold text-[#191c1d]">Book Service</h1>
+
+                    {/* Schedule Info Panel */}
+                    {scheduleError ? (
+                        <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 p-4">
+                            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+                            <div>
+                                <p className="text-sm font-semibold text-red-700">{scheduleError}</p>
+                            </div>
+                        </div>
+                    ) : scheduleAssignment && (
+                        <div className={`mb-6 rounded-xl border p-4 ${getScheduleBadgeColor(scheduleAssignment.schedule_status)}`}>
+                            <div className="flex items-start gap-3">
+                                <Calendar className="mt-0.5 h-5 w-5 shrink-0" />
+                                <div className="flex-1">
+                                    <p className="text-sm font-bold">{formatScheduleInfo(scheduleAssignment)}</p>
+                                    <p className="mt-1.5 text-xs leading-relaxed opacity-85">{scheduleAssignment.schedule_note}</p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Compact Service Summary */}
                     <div className="mb-6 flex gap-4 rounded-xl bg-gray-50 p-4">
@@ -277,7 +352,7 @@ function BookingApplyContent() {
                         {/* Submit Button */}
                         <button
                             type="submit"
-                            disabled={!isFormValid() || submitting}
+                            disabled={!isFormValid() || submitting || !!scheduleError}
                             className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[#003527] px-6 py-3.5 font-bold text-white shadow-lg shadow-[#003527]/20 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                             {submitting ? (

@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/app/lib/supabase/client";
-import { Loader2, Search, Eye, Filter } from "lucide-react";
+import { Loader2, Search, Eye, Filter, Calendar } from "lucide-react";
 import { showToast } from "@/app/lib/toast";
+import { getLocalDateString } from "@/app/lib/schedule";
 import Link from "next/link";
 
 type BookingRequest = {
@@ -17,6 +18,11 @@ type BookingRequest = {
     paid_money: number;
     process: "new" | "review" | "processing" | "completed";
     created_at: string;
+    scheduled_date?: string;
+    scheduled_start_time?: string;
+    scheduled_end_time?: string;
+    schedule_status?: string;
+    schedule_note?: string;
 };
 
 type Stats = {
@@ -37,11 +43,12 @@ export default function RequestsPage() {
     const [searchTerm, setSearchTerm] = useState("");
     const [processFilter, setProcessFilter] = useState<string>("all");
     const [paymentFilter, setPaymentFilter] = useState<string>("all");
+    const [scheduleFilter, setScheduleFilter] = useState<string>("all");
 
     useEffect(() => {
         fetchStats();
         fetchRequests();
-    }, [currentPage, searchTerm, processFilter, paymentFilter]);
+    }, [currentPage, searchTerm, processFilter, paymentFilter, scheduleFilter]);
 
     async function fetchStats() {
         const supabase = createClient();
@@ -81,6 +88,19 @@ export default function RequestsPage() {
         }
         if (paymentFilter !== "all") {
             query = query.eq("payment_status", paymentFilter);
+        }
+
+        // Schedule filter
+        const today = getLocalDateString(new Date());
+        const tomorrowDate = new Date();
+        tomorrowDate.setDate(tomorrowDate.getDate() + 1);
+        const tomorrow = getLocalDateString(tomorrowDate);
+        if (scheduleFilter === "today") {
+            query = query.eq("scheduled_date", today);
+        } else if (scheduleFilter === "tomorrow") {
+            query = query.eq("scheduled_date", tomorrow);
+        } else if (scheduleFilter === "unscheduled") {
+            query = query.is("scheduled_date", null);
         }
 
         // Pagination
@@ -181,6 +201,19 @@ export default function RequestsPage() {
                             <option value="paid">Paid</option>
                             <option value="failed">Failed</option>
                         </select>
+                        <select
+                            value={scheduleFilter}
+                            onChange={(e) => {
+                                setScheduleFilter(e.target.value);
+                                setCurrentPage(1);
+                            }}
+                            className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                        >
+                            <option value="all">All Schedule</option>
+                            <option value="today">Today</option>
+                            <option value="tomorrow">Tomorrow</option>
+                            <option value="unscheduled">Unscheduled</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -204,6 +237,7 @@ export default function RequestsPage() {
                                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-[#191c1d]/45">Amount</th>
                                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-[#191c1d]/45">Process</th>
                                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-[#191c1d]/45">Date</th>
+                                        <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-[#191c1d]/45">Schedule</th>
                                         <th className="px-6 py-4 text-xs font-bold uppercase tracking-[0.14em] text-[#191c1d]/45">Actions</th>
                                     </tr>
                                 </thead>
@@ -236,6 +270,25 @@ export default function RequestsPage() {
                                                 <span className="text-sm text-[#191c1d]/70">
                                                     {new Date(request.created_at).toLocaleDateString()}
                                                 </span>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                {request.scheduled_date ? (
+                                                    <div className="flex items-center gap-1.5">
+                                                        <Calendar className="h-3.5 w-3.5 text-[#003527]/50" />
+                                                        <div>
+                                                            <span className="text-xs font-semibold text-[#191c1d]">
+                                                                {request.schedule_status === "today" ? "Today" : new Date(request.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                                            </span>
+                                                            {request.scheduled_start_time && (
+                                                                <span className="ml-1 text-xs text-[#191c1d]/50">
+                                                                    {request.scheduled_start_time}-{request.scheduled_end_time}
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs text-[#191c1d]/40">—</span>
+                                                )}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <Link
@@ -271,8 +324,8 @@ export default function RequestsPage() {
                                             key={page}
                                             onClick={() => setCurrentPage(page)}
                                             className={`rounded-lg px-4 py-2 text-sm font-medium transition ${currentPage === page
-                                                    ? "bg-[#003527] text-white"
-                                                    : "border border-gray-200 text-[#191c1d] hover:bg-gray-50"
+                                                ? "bg-[#003527] text-white"
+                                                : "border border-gray-200 text-[#191c1d] hover:bg-gray-50"
                                                 }`}
                                         >
                                             {page}

@@ -12,11 +12,18 @@ type ConfigData = {
     hero_title: string;
     hero_subtitle: string;
     background_image: string;
+    image_1: string;
+    image_2: string;
     video: string;
     service_price: number;
     is_discount_active: boolean;
     discount_price: number;
     whatsapp_number: string;
+    about_us_title: string;
+    about_us_subtitle: string;
+    about_us_description: string;
+    about_us_full_description: string;
+    about_us_video: string;
 };
 
 export default function ConfigPage() {
@@ -25,11 +32,18 @@ export default function ConfigPage() {
         hero_title: "",
         hero_subtitle: "",
         background_image: "",
+        image_1: "",
+        image_2: "",
         video: "",
         service_price: 0,
         is_discount_active: false,
         discount_price: 0,
         whatsapp_number: "",
+        about_us_title: "",
+        about_us_subtitle: "",
+        about_us_description: "",
+        about_us_full_description: "",
+        about_us_video: "",
     });
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -54,7 +68,7 @@ export default function ConfigPage() {
         fetchConfig();
     }, []);
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, field: keyof ConfigData = "background_image") => {
         const file = e.target.files?.[0];
         if (!file) return;
 
@@ -62,7 +76,7 @@ export default function ConfigPage() {
         const supabase = createClient();
 
         const fileExt = file.name.split(".").pop();
-        const fileName = `bg-${Date.now()}.${fileExt}`;
+        const fileName = `${field}-${Date.now()}.${fileExt}`;
 
         const { error: uploadError } = await supabase.storage
             .from("som-omaan")
@@ -70,11 +84,11 @@ export default function ConfigPage() {
 
         if (uploadError) {
             console.error("Error uploading image:", uploadError);
-            showToast("Failed to upload background image", "error");
+            showToast("Failed to upload image", "error");
         } else {
             const { data } = supabase.storage.from("som-omaan").getPublicUrl(fileName);
-            setConfig((prev) => ({ ...prev, background_image: data.publicUrl }));
-            showToast("Background image uploaded successfully", "success");
+            setConfig((prev) => ({ ...prev, [field]: data.publicUrl }));
+            showToast("Image uploaded successfully", "success");
         }
         setUploading(false);
     };
@@ -103,11 +117,18 @@ export default function ConfigPage() {
             hero_title: config.hero_title,
             hero_subtitle: config.hero_subtitle,
             background_image: config.background_image,
+            image_1: config.image_1,
+            image_2: config.image_2,
             video: config.video,
             service_price: config.service_price,
             is_discount_active: config.is_discount_active,
             discount_price: config.discount_price,
             whatsapp_number: config.whatsapp_number,
+            about_us_title: config.about_us_title,
+            about_us_subtitle: config.about_us_subtitle,
+            about_us_description: config.about_us_description,
+            about_us_full_description: config.about_us_full_description,
+            about_us_video: config.about_us_video,
         };
 
         let query = supabase.from("config").update(updateData);
@@ -222,7 +243,7 @@ export default function ConfigPage() {
                                 <input
                                     type="file"
                                     accept="image/*"
-                                    onChange={handleImageUpload}
+                                    onChange={(e) => handleImageUpload(e, "background_image")}
                                     className="hidden"
                                     id="bg-image-upload"
                                 />
@@ -251,6 +272,116 @@ export default function ConfigPage() {
                                             sizes="(max-width: 768px) 100vw, 600px"
                                             className="object-cover"
                                             priority
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-[#191c1d]">
+                                Slider Image 2
+                            </label>
+                            <p className="mb-2 text-xs text-[#191c1d]/60">Displayed after the background image in the hero slider.</p>
+                            <div className="space-y-3">
+                                <input
+                                    type="text"
+                                    value={config.image_1}
+                                    onChange={(e) => handleChange("image_1", e.target.value)}
+                                    placeholder="Paste image URL"
+                                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                                />
+                                <div className="flex items-center gap-3">
+                                    <div className="h-px flex-1 bg-gray-200" />
+                                    <span className="text-xs text-gray-500">OR</span>
+                                    <div className="h-px flex-1 bg-gray-200" />
+                                </div>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleImageUpload(e, "image_1")}
+                                    className="hidden"
+                                    id="image-1-upload"
+                                />
+                                <label
+                                    htmlFor="image-1-upload"
+                                    className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-4 text-sm font-medium text-gray-600 transition hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Uploading...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="h-4 w-4" />
+                                            Upload Slider Image 2
+                                        </>
+                                    )}
+                                </label>
+                                {config.image_1 && (
+                                    <div className="relative h-32 w-full overflow-hidden rounded-xl border border-gray-200">
+                                        <Image
+                                            src={config.image_1}
+                                            alt="Slider image 2 preview"
+                                            fill
+                                            sizes="(max-width: 768px) 100vw, 600px"
+                                            className="object-cover"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-[#191c1d]">
+                                Slider Image 3
+                            </label>
+                            <p className="mb-2 text-xs text-[#191c1d]/60">Displayed after slider image 2 in the hero slider.</p>
+                            <div className="space-y-3">
+                                <input
+                                    type="text"
+                                    value={config.image_2}
+                                    onChange={(e) => handleChange("image_2", e.target.value)}
+                                    placeholder="Paste image URL"
+                                    className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                                />
+                                <div className="flex items-center gap-3">
+                                    <div className="h-px flex-1 bg-gray-200" />
+                                    <span className="text-xs text-gray-500">OR</span>
+                                    <div className="h-px flex-1 bg-gray-200" />
+                                </div>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleImageUpload(e, "image_2")}
+                                    className="hidden"
+                                    id="image-2-upload"
+                                />
+                                <label
+                                    htmlFor="image-2-upload"
+                                    className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 px-4 py-4 text-sm font-medium text-gray-600 transition hover:border-emerald-500 hover:bg-emerald-50 hover:text-emerald-700"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                            Uploading...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Upload className="h-4 w-4" />
+                                            Upload Slider Image 3
+                                        </>
+                                    )}
+                                </label>
+                                {config.image_2 && (
+                                    <div className="relative h-32 w-full overflow-hidden rounded-xl border border-gray-200">
+                                        <Image
+                                            src={config.image_2}
+                                            alt="Slider image 3 preview"
+                                            fill
+                                            sizes="(max-width: 768px) 100vw, 600px"
+                                            className="object-cover"
                                         />
                                     </div>
                                 )}
@@ -339,6 +470,80 @@ export default function ConfigPage() {
                         <p className="mt-2 text-xs text-[#191c1d]/60">
                             Include country code (e.g., +252XXXXXXXXX). This will be used for WhatsApp contact on booking success page.
                         </p>
+                    </div>
+                </div>
+
+                <div className="rounded-[30px] bg-white p-6 shadow-[0_20px_45px_rgba(25,28,29,0.05)]">
+                    <h3 className="mb-6 text-lg font-bold text-[#191c1d]">About Us Page Settings</h3>
+
+                    <div className="space-y-5">
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-[#191c1d]">
+                                About Us Title
+                            </label>
+                            <input
+                                type="text"
+                                value={config.about_us_title}
+                                onChange={(e) => handleChange("about_us_title", e.target.value)}
+                                placeholder="About SomOman"
+                                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-[#191c1d]">
+                                About Us Subtitle
+                            </label>
+                            <input
+                                type="text"
+                                value={config.about_us_subtitle}
+                                onChange={(e) => handleChange("about_us_subtitle", e.target.value)}
+                                placeholder="Your trusted partner for services in Oman"
+                                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-[#191c1d]">
+                                About Us Short Description
+                            </label>
+                            <textarea
+                                value={config.about_us_description}
+                                onChange={(e) => handleChange("about_us_description", e.target.value)}
+                                rows={3}
+                                placeholder="A brief overview shown at the top of the About Us page"
+                                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-[#191c1d]">
+                                About Us Full Description
+                            </label>
+                            <textarea
+                                value={config.about_us_full_description}
+                                onChange={(e) => handleChange("about_us_full_description", e.target.value)}
+                                rows={6}
+                                placeholder="Detailed description. Use line breaks to separate paragraphs."
+                                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="mb-2 block text-sm font-semibold text-[#191c1d]">
+                                About Us Video URL
+                            </label>
+                            <input
+                                type="url"
+                                value={config.about_us_video}
+                                onChange={(e) => handleChange("about_us_video", e.target.value)}
+                                placeholder="YouTube, TikTok, or direct video URL (fallback to hero video if empty)"
+                                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm outline-none transition-all focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
+                            />
+                            <p className="mt-2 text-xs text-[#191c1d]/60">
+                                If empty, the hero video URL will be used as fallback.
+                            </p>
+                        </div>
                     </div>
                 </div>
 

@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createClient } from "@/app/lib/supabase/client";
 import { useParams } from "next/navigation";
-import { Loader2, CheckCircle, Lock, MessageCircle } from "lucide-react";
+import { Loader2, CheckCircle, Lock, MessageCircle, Calendar } from "lucide-react";
 import Link from "next/link";
 
 type BookingRequest = {
@@ -17,6 +17,12 @@ type BookingRequest = {
     process: string;
     created_at: string;
     booking_pin: string;
+    scheduled_date?: string;
+    scheduled_day_of_week?: number;
+    scheduled_start_time?: string;
+    scheduled_end_time?: string;
+    schedule_status?: string;
+    schedule_note?: string;
 };
 
 type Service = {
@@ -246,6 +252,35 @@ export default function RequestDetailPage() {
                             </div>
                         </div>
                     </div>
+
+                    {/* Processing Schedule */}
+                    {request.scheduled_date && (
+                        <div className="rounded-[30px] bg-white p-6 shadow-[0_20px_45px_rgba(25,28,29,0.05)]">
+                            <h2 className="mb-4 text-lg font-extrabold text-[#191c1d]">Processing Schedule</h2>
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <Calendar className="mt-0.5 h-5 w-5 shrink-0 text-[#003527]" />
+                                    <div>
+                                        <p className="text-sm font-semibold text-[#191c1d]">
+                                            {request.schedule_status === "today"
+                                                ? "Today"
+                                                : new Date(request.scheduled_date + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                                        </p>
+                                        {request.scheduled_start_time && request.scheduled_end_time && (
+                                            <p className="text-sm text-[#191c1d]/70">
+                                                {request.scheduled_start_time} - {request.scheduled_end_time}
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                                {request.schedule_note && (
+                                    <p className="rounded-lg bg-emerald-50 border border-emerald-200 px-3 py-2 text-xs text-emerald-700">
+                                        {request.schedule_note}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Next Steps */}
                     <div className="rounded-[30px] bg-blue-50 border border-blue-200 p-6">

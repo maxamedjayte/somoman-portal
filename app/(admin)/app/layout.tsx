@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, Package, LogOut, Menu, X, ChevronLeft, ChevronRight, FileText } from "lucide-react";
+import { LayoutDashboard, Settings, Package, LogOut, Menu, X, ChevronLeft, ChevronRight, FileText, Calendar } from "lucide-react";
 import { logout } from "@/app/(auth)/auth/login/actions";
 import { useState, useEffect } from "react";
 import { createClient } from "@/app/lib/supabase/client";
@@ -11,6 +11,7 @@ import { ToastContainer } from "@/app/lib/toast";
 const navigationItems = [
     { href: "/app/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/app/requests", label: "Requests", icon: FileText },
+    { href: "/app/schedule", label: "Schedule", icon: Calendar },
     { href: "/app/services", label: "Services", icon: Package },
     { href: "/app/config", label: "Config", icon: Settings },
 ];
@@ -18,6 +19,7 @@ const navigationItems = [
 const pageTitles: Record<string, string> = {
     "/app/dashboard": "Dashboard Overview",
     "/app/requests": "Booking Requests",
+    "/app/schedule": "Work Schedule",
     "/app/services": "Manage Services",
     "/app/config": "Site Configuration",
 };

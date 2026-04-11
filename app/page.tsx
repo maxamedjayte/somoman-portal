@@ -12,7 +12,7 @@ async function getConfig(): Promise<Config | null> {
     const supabase = await createClient();
     const { data, error } = await supabase
       .from("config")
-      .select("title, hero_title, hero_subtitle, background_image, video, service_price, is_discount_active, discount_price, whatsapp_number")
+      .select("title, hero_title, hero_subtitle, background_image, image_1, image_2, video, service_price, is_discount_active, discount_price, whatsapp_number, about_us_title, about_us_subtitle, about_us_description, about_us_full_description, about_us_video")
       .single();
 
     if (error) {
